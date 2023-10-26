@@ -46,15 +46,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Wails Application
-        uses: docker/build-push-action@v4
+      - name: Calculate Docker Tag
+        id: calculateDockerTag
         env:
-          RELEASE_TAG: ${{ inputs.WAILS_VERSION }}
+          WAILS_VERSION: ${{ inputs.WAILS_VERSION }}
+        run: |
+          RELEASE_TAG="ghcr.io/abjrcode/cross-wails:$WAILS_VERSION" && echo $RELEASE_TAG && echo "releaseTag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v4
         with:
           push: ${{ inputs.PUSH_IMAGE }}
-          tags: |
-            ghcr.io/abjrcode/cross-wails:$RELEASE_TAG
+          tags: ${{ steps.calculateDockerTag.outputs.releaseTag }}
           load: false
+          platforms: linux/amd64,linux/arm64
           cache-from: |
             type=registry,ref=ghcr.io/abjrcode/cross-wails/cache
           cache-to: type=registry,ref=ghcr.io/abjrcode/cross-wails/cache,mode=max
