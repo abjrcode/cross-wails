@@ -1,0 +1,25 @@
+name: Main
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: cross-wails-main
+  cancel-in-progress: true
+
+jobs:
+  LinuxCI:
+    uses: ./.github/workflows/build-linux.yaml
+
+    permissions:
+      contents: read
+      packages: write
+
+    with:
+      PUSH_IMAGE: true
+      GO_VERSION: "1.21.1"
+      NODE_VERSION: "18"
+      WAILS_VERSION: "v2.6.0"

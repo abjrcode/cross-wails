@@ -1,0 +1,32 @@
+name: Pull Request
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: cross-wails-pr-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  LinuxCI:
+    if: ${{ !github.event.pull_request.draft }}
+
+    uses: ./.github/workflows/build-linux.yaml
+
+    permissions:
+      contents: read
+      packages: write
+
+    with:
+      PUSH_IMAGE: false
+      GO_VERSION: "1.21.1"
+      NODE_VERSION: "18"
+      WAILS_VERSION: "v2.6.0"

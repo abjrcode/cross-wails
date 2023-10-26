@@ -1,0 +1,64 @@
+name: Linux Build
+
+on:
+  workflow_call:
+    inputs:
+      PUSH_IMAGE:
+        type: boolean
+        description: "Push image to registry"
+        required: true
+      GO_VERSION:
+        type: string
+        description: "Full Go version to use, e.g. 1.21.1"
+        required: true
+      NODE_VERSION:
+        type: string
+        description: "Node version to use, e.g. 18, 20 etc"
+        required: true
+      WAILS_VERSION:
+        type: string
+        description: "Wails version to use, e.g. v2.6.0"
+        required: true
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Wails Application
+        uses: docker/build-push-action@v4
+        env:
+          RELEASE_TAG: ${{ inputs.WAILS_VERSION }}
+        with:
+          push: ${{ inputs.PUSH_IMAGE }}
+          tags: |
+            ghcr.io/abjrcode/cross-wails:$RELEASE_TAG
+          load: false
+          cache-from: |
+            type=registry,ref=ghcr.io/abjrcode/cross-wails/cache
+          cache-to: type=registry,ref=ghcr.io/abjrcode/cross-wails/cache,mode=max
+          build-args: |
+            GO_VERSION=${{ inputs.GO_VERSION }}
+            WAILS_VERSION=${{ inputs.WAILS_VERSION }}
+            NODE_MAJOR_VERSION=${{ inputs.NODE_VERSION }}
