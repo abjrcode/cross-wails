@@ -25,13 +25,10 @@
 # https://github.com/goreleaser/goreleaser-cross-toolchains/blob/main/Dockerfile
 
 
-FROM --platform=$BUILDPLATFORM debian:bullseye as builder
+FROM debian:bullseye as builder
 
 LABEL maintainer="Ibrahim Najjar <https://github.com/abjrcode/>"
 LABEL "org.opencontainers.image.source"="https://github.com/abjrcode/cross-wails"
-
-# TARGETARCH is set by Docker Buildx
-ARG TARGETARCH
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG DPKG_ARCH="amd64 arm64"
@@ -77,7 +74,7 @@ RUN mkdir -p /etc/apt/keyrings && \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR_VERSION.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
     apt-get -qq update && apt-get -qq install nodejs -y
 
-
+ARG TARGETARCH
 # Install Go
 ARG GO_VERSION=1.21.3
 RUN wget https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz \
@@ -98,12 +95,7 @@ ENV CGO_ENABLED=1
 
 # Install Wails
 ARG WAILS_VERSION=v2.6.0
-RUN if [ "${TARGETARCH}" = "amd64" ]; then \
-      CC="x86_64-linux-gnu-gcc"; \
-    else \
-      CC="aarch64-linux-gnu-gcc"; \
-    fi; \
-    GOARCH=${TARGETARCH} CC=${CC} go install github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION}
+RUN go install github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION}
 
 
 ENTRYPOINT [ "/bin/bash" ]
