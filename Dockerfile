@@ -24,9 +24,8 @@
 # Adopted from Go Releaser Toolchain
 # https://github.com/goreleaser/goreleaser-cross-toolchains/blob/main/Dockerfile
 
-ARG GO_VERSION=1.21.1
 
-FROM --platform=$BUILDPLATFORM golang:${GO_VERSION} as builder
+FROM --platform=$BUILDPLATFORM debian:bullseye as builder
 
 LABEL maintainer="Ibrahim Najjar <https://github.com/abjrcode/>"
 LABEL "org.opencontainers.image.source"="https://github.com/abjrcode/cross-wails"
@@ -35,19 +34,24 @@ LABEL "org.opencontainers.image.source"="https://github.com/abjrcode/cross-wails
 ARG TARGETARCH
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG DPKG_ARCH="amd64 arm64 i386"
+ARG DPKG_ARCH="amd64 arm64"
 ARG CROSSBUILD_ARCH="amd64 arm64"
 ARG MINGW_VERSION=20230130
-ARG MINGW_HOST="ubuntu-22.04"
+ARG MINGW_HOST="ubuntu-18.04"
 
 SHELL ["/bin/bash", "-c"]
 
 RUN set -x; \
-  while read arch; do dpkg --add-architecture $arch; done < <(echo "${DPKG_ARCH}" | tr ' ' '\n') \
+  apt-get update \
+  && apt-get install --no-install-recommends -y -qq \
+    wget \
+    ca-certificates \
+    gnupg \
+    nsis \
+  && while read arch; do dpkg --add-architecture $arch; done < <(echo "${DPKG_ARCH}" | tr ' ' '\n') \
   && crossbuild_pkgs=$(while read arch; do echo -n "crossbuild-essential-$arch "; done < <(echo "${CROSSBUILD_ARCH}" | tr ' ' '\n')) \
   && apt-get update \
-  && apt-get install --no-install-recommends -y -q \
-        libc6-dev \
+  && apt-get install --no-install-recommends -y -qq \
         gcc \
         libarchive-tools \
         mingw-w64 \
@@ -65,17 +69,22 @@ RUN dpkg --add-architecture arm64 \
   && apt-get -qq update \
   && apt-get -qq install -y libgtk-3-dev:arm64 libwebkit2gtk-4.0-dev:arm64
 
-# NSIS is only needed for Windows, so we install the one that matches the build platform
-RUN apt-get -qq install -y nsis
-
 ARG NODE_MAJOR_VERSION=18
 
 # Install NodeJS
-RUN apt-get -qq install -y ca-certificates curl gnupg && \
-    mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+RUN mkdir -p /etc/apt/keyrings && \
+    wget -q -O - https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR_VERSION.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
     apt-get -qq update && apt-get -qq install nodejs -y
+
+
+# Install Go
+ARG GO_VERSION=1.21.3
+RUN wget https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz \
+ && rm -rf /usr/local/go && tar -C /usr/local -xzf go${GO_VERSION}.linux-${TARGETARCH}.tar.gz \
+ && rm go${GO_VERSION}.linux-${TARGETARCH}.tar.gz
+
+ENV PATH=$PATH:/root/go/bin:/usr/local/go/bin
 
 RUN apt -y autoremove \
   && apt-get clean \
@@ -85,10 +94,16 @@ RUN apt -y autoremove \
   && rm -rf /usr/share/man/* \
     /usr/share/doc
 
+ENV CGO_ENABLED=1
+
 # Install Wails
 ARG WAILS_VERSION=v2.6.0
-RUN go install github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION}
+RUN if [ "${TARGETARCH}" = "amd64" ]; then \
+      CC="x86_64-linux-gnu-gcc"; \
+    else \
+      CC="aarch64-linux-gnu-gcc"; \
+    fi; \
+    GOARCH=${TARGETARCH} CC=${CC} go install github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION}
 
-ENV CGO_ENABLED=1
 
 ENTRYPOINT [ "/bin/bash" ]
