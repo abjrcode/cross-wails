@@ -1,11 +1,11 @@
 # Cross Wails
 
-Docker Image for Cross Compiling Wails Applications
+Docker Image for Cross Compiling [Wails Applications](https://wails.io/)
 
 ## Usage
 
 ```dockerfile
-FROM ghcr.io/abjrcode/wails-cross:latest
+FROM ghcr.io/abjrcode/wails-cross:v2.6.0
 ```
 
 ## Details
