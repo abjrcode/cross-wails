@@ -1,19 +1,21 @@
-# README
+# Run / Build Example
 
-## About
+This is a vanilla Wails application that was created by running:
 
-This is the official Wails Vanilla template.
+```bash
+wails init -n example -t vanilla
+```
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+The only addition is the Dockerfile that is used to cross compile the application.
 
-## Live Development
+Try out it by running:
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+```bash
+docker build -t example_builder .
+```
 
-## Building
+Then run the container to extract the build artifacts:
 
-To build a redistributable, production mode package, use `wails build`.
+```bash
+docker run --rm -v $(pwd)/build/bin:/artifacts example_builder
+```
