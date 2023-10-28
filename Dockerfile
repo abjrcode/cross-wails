@@ -95,7 +95,7 @@ ENV CGO_ENABLED=1
 
 # Install Wails
 ARG WAILS_VERSION=v2.6.0
-RUN go install github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION}
-
+RUN go install github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION} \
+    && go clean -cache && rm -rf /root/go/pkg
 
 ENTRYPOINT [ "/bin/bash" ]
