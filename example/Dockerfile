@@ -39,7 +39,21 @@ RUN go mod download
 
 COPY . .
 
-RUN wails build -platform linux/arm64,linux/amd64,windows/amd64
+
+# Docker injects the value of BUILDARCH into the build process
+ARG BUILDARCH
+
+# Needed atm due to https://github.com/wailsapp/wails/issues/1921
+RUN set -exo pipefail; \
+  if [ "${BUILDARCH}" = "amd64" ]; then \
+    GOOS=linux GOARCH=amd64 CC=x86_64-linux-gnu-gcc wails build -platform linux/amd64; \
+    GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc wails build -skipbindings -s -platform linux/arm64; \
+    GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc wails build -skipbindings -s -platform windows/amd64; \
+  else \
+    GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc wails build -platform linux/arm64; \
+    GOOS=linux GOARCH=amd64 CC=x86_64-linux-gnu-gcc wails build -skipbindings -s -platform linux/amd64; \
+    GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc wails build -skipbindings -s -platform windows/amd64; \
+  fi;
 
 ENTRYPOINT [ "/bin/bash" ]
 
