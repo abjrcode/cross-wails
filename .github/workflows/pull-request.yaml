@@ -27,6 +27,6 @@ jobs:
 
     with:
       PUSH_IMAGE: false
-      GO_VERSION: "1.21.1"
-      NODE_VERSION: "18"
-      WAILS_VERSION: "v2.6.0"
+      GO_VERSION: "1.21.5"
+      NODE_VERSION: "20"
+      WAILS_VERSION: "v2.7.1"
