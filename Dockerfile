@@ -66,7 +66,7 @@ RUN dpkg --add-architecture arm64 \
   && apt-get -qq update \
   && apt-get -qq install -y libgtk-3-dev:arm64 libwebkit2gtk-4.0-dev:arm64
 
-ARG NODE_MAJOR_VERSION=18
+ARG NODE_MAJOR_VERSION=20
 
 # Install NodeJS
 RUN mkdir -p /etc/apt/keyrings && \
@@ -76,7 +76,7 @@ RUN mkdir -p /etc/apt/keyrings && \
 
 ARG TARGETARCH
 # Install Go
-ARG GO_VERSION=1.21.3
+ARG GO_VERSION=1.21.5
 RUN wget https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz \
  && rm -rf /usr/local/go && tar -C /usr/local -xzf go${GO_VERSION}.linux-${TARGETARCH}.tar.gz \
  && rm go${GO_VERSION}.linux-${TARGETARCH}.tar.gz
@@ -94,7 +94,7 @@ RUN apt -y autoremove \
 ENV CGO_ENABLED=1
 
 # Install Wails
-ARG WAILS_VERSION=v2.6.0
+ARG WAILS_VERSION=v2.7.1
 RUN go install github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION} \
     && go clean -cache && rm -rf /root/go/pkg
 
