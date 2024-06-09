@@ -7,7 +7,7 @@ Docker Image for Cross Compiling [Wails Applications](https://wails.io/)
 You can use this image as a base image in your own Dockerfile:
 
 ```dockerfile
-FROM ghcr.io/abjrcode/cross-wails:v2.7.1 as base
+FROM ghcr.io/abjrcode/cross-wails:v2.8.2 as base
 
 # Use `wails build` to build your application
 ```
