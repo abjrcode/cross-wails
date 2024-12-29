@@ -25,7 +25,7 @@
 # https://github.com/goreleaser/goreleaser-cross-toolchains/blob/main/Dockerfile
 
 
-FROM debian:bullseye as builder
+FROM debian:bookworm AS builder
 
 LABEL maintainer="Ibrahim Najjar <https://github.com/abjrcode/>"
 LABEL "org.opencontainers.image.source"="https://github.com/abjrcode/cross-wails"
@@ -39,15 +39,18 @@ ARG MINGW_HOST="ubuntu-18.04"
 SHELL ["/bin/bash", "-c"]
 
 RUN set -x; \
-  apt-get update \
+  apt-get -qq update \
   && apt-get install --no-install-recommends -y -qq \
+    curl \
     wget \
     ca-certificates \
     gnupg \
     nsis \
   && while read arch; do dpkg --add-architecture $arch; done < <(echo "${DPKG_ARCH}" | tr ' ' '\n') \
-  && crossbuild_pkgs=$(while read arch; do echo -n "crossbuild-essential-$arch "; done < <(echo "${CROSSBUILD_ARCH}" | tr ' ' '\n')) \
-  && apt-get update \
+  && apt-get clean \
+  && apt-get -qq update
+
+RUN crossbuild_pkgs=$(while read arch; do echo -n "crossbuild-essential-$arch "; done < <(echo "${CROSSBUILD_ARCH}" | tr ' ' '\n')) \
   && apt-get install --no-install-recommends -y -qq \
         gcc \
         libarchive-tools \
@@ -58,25 +61,24 @@ RUN set -x; \
   && ln -snf $(pwd)/llvm-mingw-${MINGW_VERSION}-ucrt-${MINGW_HOST}-${MINGW_ARCH} /llvm-mingw
 
 # Install Libgtk, webkit and NSIS
-RUN dpkg --add-architecture amd64 \
-  && apt-get -qq update \
+RUN apt-get -qq update \
   && apt-get -qq install -y libgtk-3-dev:amd64 libwebkit2gtk-4.0-dev:amd64
 
-RUN dpkg --add-architecture arm64 \
-  && apt-get -qq update \
+RUN apt-get -qq update \
   && apt-get -qq install -y libgtk-3-dev:arm64 libwebkit2gtk-4.0-dev:arm64
 
 ARG NODE_MAJOR_VERSION=20
 
 # Install NodeJS
-RUN mkdir -p /etc/apt/keyrings && \
-    wget -q -O - https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR_VERSION.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
-    apt-get -qq update && apt-get -qq install nodejs -y
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR_VERSION}.x -o nodesource_setup.sh \
+  && chmod +x nodesource_setup.sh \
+  && bash nodesource_setup.sh \
+  && apt-get install -y nodejs
+
 
 ARG TARGETARCH
 # Install Go
-ARG GO_VERSION=1.21.5
+ARG GO_VERSION=1.23.4
 RUN wget https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz \
  && rm -rf /usr/local/go && tar -C /usr/local -xzf go${GO_VERSION}.linux-${TARGETARCH}.tar.gz \
  && rm go${GO_VERSION}.linux-${TARGETARCH}.tar.gz
@@ -94,7 +96,7 @@ RUN apt -y autoremove \
 ENV CGO_ENABLED=1
 
 # Install Wails
-ARG WAILS_VERSION=v2.8.2
+ARG WAILS_VERSION=v2.9.2
 RUN go install github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION} \
     && go clean -cache && rm -rf /root/go/pkg
 
