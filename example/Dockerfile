@@ -1,6 +1,6 @@
-ARG BASE_IMAGE=ghcr.io/abjrcode/cross-wails:v2.6.0
+ARG BASE_IMAGE=ghcr.io/abjrcode/cross-wails:v2.9.2
 
-FROM ${BASE_IMAGE} as builder
+FROM ${BASE_IMAGE} AS builder
 
 WORKDIR /usr/src/app
 
